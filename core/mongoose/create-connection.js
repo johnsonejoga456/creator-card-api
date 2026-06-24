@@ -25,6 +25,9 @@ async function createConnection(connectionConfig) {
       // useNewUrlParser: true,
       // useUnifiedTopology: true,
     };
+    if (process.env.MONGODB_DB_NAME) {
+      connectionOptions.dbName = process.env.MONGODB_DB_NAME;
+    }
     try {
       let connection;
       if (isNotDefault) {

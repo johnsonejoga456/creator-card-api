@@ -8,22 +8,11 @@ const { createConnection } = require('@app-core/mongoose');
 const { createQueue } = require('@app-core/queue');
 
 const canLogEndpointInformation = process.env.CAN_LOG_ENDPOINT_INFORMATION;
-
-createConnection({
-  uri: process.env.MONGODB_URI,
-});
-
-createQueue();
-
-const server = createServer({
-  port: process.env.PORT,
-  JSONLimit: '150mb',
-  enableCors: true,
-});
+let server;
 
 const ENDPOINT_CONFIGS = [
   {
-    path: './endpoints/onboarding/',
+    path: './endpoints/creator-cards/',
   },
 ];
 
@@ -82,8 +71,32 @@ function setupEndpointHandlers(basePath, options = {}) {
   });
 }
 
-ENDPOINT_CONFIGS.forEach((config) => {
-  setupEndpointHandlers(config.path, config.options);
-});
+async function startApp() {
+  if (!process.env.MONGODB_URI) {
+    throw new Error('MONGODB_URI is required. Set it in .env before starting the API.');
+  }
 
-server.startServer();
+  await createConnection({
+    uri: process.env.MONGODB_URI,
+  });
+
+  createQueue();
+
+  server = createServer({
+    port: process.env.PORT,
+    JSONLimit: '150mb',
+    enableCors: true,
+  });
+
+  ENDPOINT_CONFIGS.forEach((config) => {
+    setupEndpointHandlers(config.path, config.options);
+  });
+
+  server.startServer();
+}
+
+startApp().catch((error) => {
+  // eslint-disable-next-line no-console
+  console.error('Failed to start app:', error.message);
+  process.exit(1);
+});
